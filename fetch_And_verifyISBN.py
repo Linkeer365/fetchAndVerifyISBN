@@ -9,12 +9,18 @@ import sys
 
 import random
 
+# proxy_url="http://58.220.95.54:9400"
+
+# proxies={"http":f"{proxy_url}",
+#          "https":f"{proxy_url}",}
+
 
 # 使用更快的f-strings
 # https://blog.csdn.net/sunxb10/article/details/81036693
 
+proxy_path=r"D:\fetch_IPs\checkedIPs.txt"
 
-xls_path="D:\AllDowns\fetchAndVerifyISBN\publisher_identifiers.xlsx"
+xls_path=r"D:\fetchAndVerifyISBN\publisher_identifiers.xlsx"
 
 same_head="9787"
 
@@ -24,6 +30,10 @@ douban_url_template="https://book.douban.com/isbn/{}/"
 
 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"}
 
+proxy_list=[]
+with open(proxy_path,"r",encoding="utf-8") as f:
+    proxy_list=[each.strip("\n") for each in f.readlines() if "http" in each]
+assert proxy_list!=[]
 
 
 def get_check_digit(initpart):
@@ -62,10 +72,22 @@ def get_full_ti_str(num,maxlen):
 
 def is_collected_by_douban_fullstr(full_str):
     assert len(full_str)==13
-    not_collected_str="豆瓣评论暂时没有收录此书，请原谅。"
-    douban_url=douban_url_template.format(full_str)
-    page_text=requests.get(douban_url,headers=headers).text
-    time.sleep(random.randint(2,5))
+    idx=0
+    # rand_int=random.randint(0,len(proxy_list)-1)
+    while idx<=len(proxy_list)-1:
+        proxy_url=proxy_list[idx]
+        proxies={   "http":f"{proxy_url}",
+                    "https":f"{proxy_url}",}
+        not_collected_str="豆瓣评论暂时没有收录此书，请原谅。"
+        douban_url=douban_url_template.format(full_str)
+        try:
+            r=requests.get(douban_url,headers=headers,proxies=proxies)
+            page_text=r.text
+        except:
+            idx+=1
+            print(f"{proxy_url}有问题，更新为第{idx}个!")
+            pass
+    # time.sleep(random.randint(2,5))
     html=etree.HTML(page_text)
     find=html.xpath("//li[starts-with(@style,'list-style-type:none;')]//text()")
     if find and find[0]==not_collected_str:
@@ -107,12 +129,12 @@ def single(some_pi,some_publisher,some_num,ti_len,target_dir2):
 #     if not os.path.exists(target_dir2):
 #         # 指明是文件夹
 #         os.makedirs(target_dir2)
-#
+
 #     print("one done.")
 
 def get_start_val(some_target_dir,some_ti_len):
     some_target_dir+=os.sep
-    if len(os.listdir(target_dir))==0:
+    if len(os.listdir(some_target_dir))==0:
         return 0
     else:
         dir_list=[each for each in os.listdir(some_target_dir) if (each[:-4]).isdigit()]
@@ -144,7 +166,6 @@ def main():
     # startAtVal=0
     #
     pip_dict=dict(zip(publisher_identifiers,publishers))
-    # thread_pool=ThreadPoolExecutor(max_workers=2)
     completed_set=set()
     if os.path.exists(f"{target_dir}{os.sep}already_dir.txt"):
         with open(f"{target_dir}{os.sep}already_dir.txt","r",encoding="utf-8") as f:
@@ -164,13 +185,14 @@ def main():
         # if os.path.exists(f"{target_dir2}{os.sep}already_num.txt"):
         #     with open(f"{target_dir2}{os.sep}already_num.txt","r",encoding="utf-8") as h:
         #         startAtVal=int(h.readlines()[-1].replace("\n",""))
+        thread_pool=ThreadPoolExecutor(max_workers=128)
         for each_num in range(startAtVal,10 ** ti_len):
-            single(each_pi,each_publisher,each_num,ti_len,target_dir2)
-            # future=thread_pool.submit(single,each_pi,each_publisher,each_num,ti_len,target_dir2)
+            # single(each_pi,each_publisher,each_num,ti_len,target_dir2)
+            future=thread_pool.submit(single,each_pi,each_publisher,each_num,ti_len,target_dir2)
+        thread_pool.shutdown(wait=True)
         print("one dir done.")
         with open(f"{target_dir}{os.sep}already_dir.txt","a",encoding="utf-8") as f:
             f.write(each_publisher+"\n")
-    # thread_pool.shutdown(wait=False)
     print("ThreadPool: All done.")
     # print(publisher_identifiers)
     # print(publishers)
