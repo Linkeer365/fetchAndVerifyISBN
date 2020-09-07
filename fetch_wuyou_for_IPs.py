@@ -4,16 +4,17 @@ import os
 # from concurrent.futures import ThreadPoolExecutor
 import telnetlib
 import time
+import sys
 
 target_dir=r"D:\fetch_IPs"
 
 # 因为访问的是豆瓣所以只用中国的ip
 
-url_template="https://ip.jiangxianli.com/?page={}&country=中国"
+url_template="http://www.data5u.com/"
 
 # check_url="http://book.ucdrs.superlib.net/search?sw=9787108020987"
-# check_url="https://www.douban.com/"
-check_url="https://douban.com/isbn/7101003044/"
+check_url="https://www.douban.com/"
+# check_url="https://douban.com/isbn/7101003044/"
 
 headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"}
@@ -21,15 +22,23 @@ headers = {
 
 
 def fetch_one_page(page_num):
-	url=f"https://ip.jiangxianli.com/?page={page_num}&country=中国"
+	url=f"http://www.data5u.com/"
 	page_text=requests.get(url,headers=headers).text
 	html=etree.HTML(page_text)
-	finds=html.xpath("//button[@class='layui-btn layui-btn-sm btn-copy']//@data-url")
-	assert finds!=[]
+	ip_finds=html.xpath("//ul[@class='l2']/span[not(@style)][1]/li//text()")
+	port_finds=html.xpath("//li[starts-with(@class,'port')]//text()")
+	# print(finds)
+	# sys.exit(0)
+	assert ip_finds!=[]
+	assert port_finds!=[]
+	finds=[f"http://{ip}:{port}" for ip,port in zip(ip_finds,port_finds)]
 	finds_s="\n".join(finds)
+	print(finds)
 	with open(f"{target_dir}{os.sep}uncheckIPs_{page_num}.txt","w",encoding="utf-8") as f:
 		f.write(finds_s+"\n")
 	print(f"{page_num} page done.")
+
+# fetch_one_page(1)
 
 def merge_pages(same_head="uncheckIPs_",max_num=7):
 	lines=[]
@@ -81,7 +90,7 @@ def fetch_useful(uncheckIPs):
 			print(f"{each_ip} is bad!")
 	if useful_ips:
 		useful_ips_s="\n".join(useful_ips)
-		with open(f"{target_dir}{os.sep}checkedIPs.txt","w",encoding="utf-8") as f:
+		with open(f"{target_dir}{os.sep}checkedIPs_wuyou.txt","w",encoding="utf-8") as f:
 			f.write(useful_ips_s)
 		print("Useful Ips fetched.")
 	else:
@@ -91,7 +100,8 @@ def fetch_useful(uncheckIPs):
 
 def main():
 	# thread_pool=ThreadPoolExecutor(max_workers=128)
-	for each_num in range(1,8):
+	# 无忧=56，谐音而已hhhh
+	for each_num in [56]:
 		fetch_one_page(each_num)
 		time.sleep(1)
 		# future=thread_pool.submit(fetch_one_page,each_num)

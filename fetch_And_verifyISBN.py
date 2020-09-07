@@ -33,6 +33,7 @@ headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.3
 proxy_list=[]
 with open(proxy_path,"r",encoding="utf-8") as f:
     proxy_list=[each.strip("\n") for each in f.readlines() if "http" in each]
+print(f"Proxy List:{proxy_list}")
 assert proxy_list!=[]
 
 
@@ -102,9 +103,10 @@ def single(some_pi,some_publisher,some_num,ti_len,target_dir2):
     init_part = f"{same_head}{some_pi}{full_ti_str}"
     check_digit = get_check_digit(init_part)
     full_str = f"{init_part}{check_digit}"
-    print("Full Str:", full_str)
+    # print("Full Str:", full_str)
     if is_collected_by_douban_fullstr(full_str):
         isbn = full_str
+        print("Collected ISBN:", full_str)
         with open(f"{target_dir2}{os.sep}{isbn}.txt", "a", encoding="utf-8") as f:
             f.write(isbn+"\n")
         # with open(f"{target_dir2}{os.sep}already_num.txt","a",encoding="utf-8") as g:
@@ -132,6 +134,7 @@ def single(some_pi,some_publisher,some_num,ti_len,target_dir2):
 
 #     print("one done.")
 
+# 多线程之后，估计就不会按照顺序了所以这里要改一下...
 def get_start_val(some_target_dir,some_ti_len):
     some_target_dir+=os.sep
     if len(os.listdir(some_target_dir))==0:
@@ -146,6 +149,15 @@ def get_start_val(some_target_dir,some_ti_len):
         start_val=last_num
         return start_val
 
+def get_nums(some_target_dir,some_ti_len):
+    some_target_dir+=os.sep
+    full_nums=list(range(0,10**some_ti_len))
+    if len(os.listdir(some_target_dir))==0:
+        return full_nums
+    else:
+        old_nums=[int((each[:-4])[-1-some_ti_len:-1]) for each in os.listdir(some_target_dir) if (each[:-4]).isdigit()]
+        nums=[each for each in full_nums if not each in old_nums]
+        return nums
 
 
 def main():
@@ -181,12 +193,16 @@ def main():
             continue
         ti_len=get_titleIdentifier_len(each_pi)
         # 这样就能有记忆力了
-        startAtVal=get_start_val(target_dir2,ti_len)
+        # startAtVal=get_start_val(target_dir2,ti_len)
+
+        nums=get_nums(target_dir2,ti_len)
+
         # if os.path.exists(f"{target_dir2}{os.sep}already_num.txt"):
         #     with open(f"{target_dir2}{os.sep}already_num.txt","r",encoding="utf-8") as h:
         #         startAtVal=int(h.readlines()[-1].replace("\n",""))
         thread_pool=ThreadPoolExecutor(max_workers=128)
-        for each_num in range(startAtVal,10 ** ti_len):
+        # for each_num in range(startAtVal,10 ** ti_len):
+        for each_num in nums:
             # single(each_pi,each_publisher,each_num,ti_len,target_dir2)
             future=thread_pool.submit(single,each_pi,each_publisher,each_num,ti_len,target_dir2)
         thread_pool.shutdown(wait=True)
