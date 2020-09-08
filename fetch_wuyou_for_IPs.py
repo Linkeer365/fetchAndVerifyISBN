@@ -22,7 +22,7 @@ headers = {
 
 
 def fetch_one_page(page_num):
-	url=f"http://www.data5u.com/"
+	url=f"https://www.kuaidaili.com/free/"
 	page_text=requests.get(url,headers=headers).text
 	html=etree.HTML(page_text)
 	ip_finds=html.xpath("//ul[@class='l2']/span[not(@style)][1]/li//text()")
@@ -45,7 +45,7 @@ def merge_pages(same_head="uncheckIPs_",max_num=7):
 	for each in os.listdir(target_dir):
 		if each.startswith(same_head) and each.endswith(".txt"):
 			with open(f"{target_dir}{os.sep}{each}","r",encoding="utf-8") as f:
-				lines.append(f.readlines())
+				lines.extend(f.readlines())
 	print(f"Lines:{lines}")
 	try:
 		lines_s="\n".join(lines)
