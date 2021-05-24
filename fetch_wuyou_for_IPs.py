@@ -12,8 +12,8 @@ target_dir=r"D:\fetch_IPs"
 
 url_template="http://www.data5u.com/"
 
-# check_url="http://book.ucdrs.superlib.net/search?sw=9787108020987"
-check_url="https://www.douban.com/"
+check_url="http://book.ucdrs.superlib.net/search?sw=9787108020987"
+# check_url="https://www.douban.com/"
 # check_url="https://douban.com/isbn/7101003044/"
 
 headers = {
@@ -22,7 +22,7 @@ headers = {
 
 
 def fetch_one_page(page_num):
-	url=f"https://www.kuaidaili.com/free/"
+	url=f"http://www.data5u.com/"
 	page_text=requests.get(url,headers=headers).text
 	html=etree.HTML(page_text)
 	ip_finds=html.xpath("//ul[@class='l2']/span[not(@style)][1]/li//text()")

@@ -11,9 +11,9 @@ target_dir=r"D:\fetch_IPs"
 
 url_template="https://www.kuaidaili.com/free/inha/{}/"
 
-# check_url="http://book.ucdrs.superlib.net/search?sw=9787108020987"
+check_url="http://book.ucdrs.superlib.net/search?sw=9787108020987"
 # check_url="https://www.douban.com/"
-check_url="https://douban.com/isbn/7101003044/"
+# check_url="https://douban.com/isbn/7101003044/"
 
 headers = {
         "User-Agent": "Mozilla/5.0 (Linux; U; Android 10; zh-cn; GM1900 Build/QKQ1.190716.003) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/66.0.3359.126 MQQBrowser/10.1 Mobile Safari/537.36"}

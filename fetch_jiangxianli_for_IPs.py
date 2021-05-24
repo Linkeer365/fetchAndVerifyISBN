@@ -9,11 +9,13 @@ target_dir=r"D:\fetch_IPs"
 
 # 因为访问的是豆瓣所以只用中国的ip
 
-url_template="https://ip.jiangxianli.com/?page={}&country=中国"
+# 高逆+中国
 
-# check_url="http://book.ucdrs.superlib.net/search?sw=9787108020987"
+# url_template="https://ip.jiangxianli.com/?page={}&country=%E4%B8%AD%E5%9B%BD&anonymity=2"
+
+check_url="http://book.ucdrs.superlib.net/search?sw=9787108020987"
 # check_url="https://www.douban.com/"
-check_url="https://douban.com/isbn/7101003044/"
+# check_url="http://douban.com/isbn/7101003044/"
 
 headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"}
@@ -21,7 +23,7 @@ headers = {
 
 
 def fetch_one_page(page_num):
-	url=f"https://ip.jiangxianli.com/?page={page_num}&country=中国"
+	url=f"https://ip.jiangxianli.com/?page={page_num}&country=%E4%B8%AD%E5%9B%BD&anonymity=2"
 	page_text=requests.get(url,headers=headers).text
 	html=etree.HTML(page_text)
 	finds=html.xpath("//button[@class='layui-btn layui-btn-sm btn-copy']//@data-url")

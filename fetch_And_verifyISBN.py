@@ -28,13 +28,15 @@ target_dir=r"D:\All_isbns"
 
 douban_url_template="https://book.douban.com/isbn/{}/"
 
+ucdrs_url_template="http://book.ucdrs.superlib.net/search?sw={}"
+
 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"}
 
-proxy_list=[]
-with open(proxy_path,"r",encoding="utf-8") as f:
-    proxy_list=[each.strip("\n") for each in f.readlines() if "http" in each]
-print(f"Proxy List:{proxy_list}")
-assert proxy_list!=[]
+# proxy_list=[]
+# with open(proxy_path,"r",encoding="utf-8") as f:
+#     proxy_list=[each.strip("\n") for each in f.readlines() if "http" in each]
+# print(f"Proxy List:{proxy_list}")
+# assert proxy_list!=[]
 
 
 def get_check_digit(initpart):
@@ -88,7 +90,7 @@ def is_collected_by_douban_fullstr(full_str):
             idx+=1
             print(f"{proxy_url}有问题，更新为第{idx}个!")
             pass
-    # time.sleep(random.randint(2,5))
+    time.sleep(random.randint(1,3))
     html=etree.HTML(page_text)
     find=html.xpath("//li[starts-with(@style,'list-style-type:none;')]//text()")
     if find and find[0]==not_collected_str:
@@ -98,20 +100,92 @@ def is_collected_by_douban_fullstr(full_str):
         print("Collected!")
         return True
 
+def is_collected_by_douban_fullstr2(full_str):
+    assert len(full_str)==13
+    idx=0
+    # rand_int=random.randint(0,len(proxy_list)-1)
+    not_collected_str="豆瓣评论暂时没有收录此书，请原谅。"
+    douban_url=douban_url_template.format(full_str)
+    r=requests.get(douban_url,headers=headers)
+    time.sleep(5)
+    page_text=r.text
+    html=etree.HTML(page_text)
+    find=html.xpath("//li[starts-with(@style,'list-style-type:none;')]//text()")
+    if find and find[0]==not_collected_str:
+        print("Not Collected!")
+        return False
+    elif not find:
+        print("Collected!")
+        return True
+
+def is_collected_by_ucdrs_fullstr2(full_str):
+    assert len(full_str)==13
+    idx=0
+    # rand_int=random.randint(0,len(proxy_list)-1)
+    not_collected_str="抱歉"
+    ucdrs_url=ucdrs_url_template.format(full_str)
+
+    print("ucdrs_url:",ucdrs_url)
+
+    r=requests.get(ucdrs_url,headers=headers)
+    time.sleep(1)
+    page_text=r.text
+    html=etree.HTML(page_text)
+    find=html.xpath("//div[starts-with(@style,'font-size:13px; line-height:24px;')]")
+    print("find:",find)
+    if find:
+        print("Not Collected!")
+        return False
+    elif not find:
+        print("Collected!")
+        return True
+
+def is_collected_by_ucdrs_fullstr(full_str):
+    assert len(full_str)==13
+    idx=0
+    # rand_int=random.randint(0,len(proxy_list)-1)
+    while idx<=len(proxy_list)-1:
+        proxy_url=proxy_list[idx]
+        proxies={   "http":f"{proxy_url}",
+                    "https":f"{proxy_url}",}
+        # not_collected_str="豆瓣评论暂时没有收录此书，请原谅。"
+        ucdrs_url=ucdrs_url_template.format(full_str)
+        try:
+            r=requests.get(ucdrs_url,headers=headers,proxies=proxies)
+            page_text=r.text
+        except:
+            idx+=1
+            print(f"{proxy_url}有问题，更新为第{idx}个!")
+            pass
+    time.sleep(random.randint(1,3))
+    html=etree.HTML(page_text)
+    find=html.xpath("//div[starts-with(@style,'font-size:13px; line-height:24px;')]")
+
+    if find:
+        print("Not Collected!")
+        return False
+    elif not find:
+        print("Collected!")
+        return True
+
 def single(some_pi,some_publisher,some_num,ti_len,target_dir2):
+    start_time=time.time()
     full_ti_str = get_full_ti_str(some_num, ti_len)
     init_part = f"{same_head}{some_pi}{full_ti_str}"
     check_digit = get_check_digit(init_part)
     full_str = f"{init_part}{check_digit}"
     # print("Full Str:", full_str)
-    if is_collected_by_douban_fullstr(full_str):
+    # if is_collected_by_douban_fullstr2(full_str):
+    if is_collected_by_ucdrs_fullstr2(full_str):
         isbn = full_str
         print("Collected ISBN:", full_str)
         with open(f"{target_dir2}{os.sep}{isbn}.txt", "a", encoding="utf-8") as f:
             f.write(isbn+"\n")
         # with open(f"{target_dir2}{os.sep}already_num.txt","a",encoding="utf-8") as g:
         #     g.write(some_num+"\n")
-    print("one file done.")
+    end_time=time.time()
+    time_cost=end_time-start_time
+    print(f"one file done. Time Cost:{time_cost}")
 
 # def single2(some_pi,some_publisher,startAtVal=0):
 #     # pi_isbns = []
@@ -200,15 +274,16 @@ def main():
         # if os.path.exists(f"{target_dir2}{os.sep}already_num.txt"):
         #     with open(f"{target_dir2}{os.sep}already_num.txt","r",encoding="utf-8") as h:
         #         startAtVal=int(h.readlines()[-1].replace("\n",""))
-        thread_pool=ThreadPoolExecutor(max_workers=128)
+        # thread_pool=ThreadPoolExecutor(max_workers=1)
         # for each_num in range(startAtVal,10 ** ti_len):
         for each_num in nums:
-            # single(each_pi,each_publisher,each_num,ti_len,target_dir2)
-            future=thread_pool.submit(single,each_pi,each_publisher,each_num,ti_len,target_dir2)
-        thread_pool.shutdown(wait=True)
+            single(each_pi,each_publisher,each_num,ti_len,target_dir2)
+            # future=thread_pool.submit(single,each_pi,each_publisher,each_num,ti_len,target_dir2)
+        # thread_pool.shutdown(wait=True)
         print("one dir done.")
         with open(f"{target_dir}{os.sep}already_dir.txt","a",encoding="utf-8") as f:
             f.write(each_publisher+"\n")
+        time.sleep(5)
     print("ThreadPool: All done.")
     # print(publisher_identifiers)
     # print(publishers)
